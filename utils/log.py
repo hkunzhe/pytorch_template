@@ -1,16 +1,17 @@
 from tabulate import tabulate
 
 
-def tabulate_step_meter(batch_idx, num_batches, step_interval, meter_list, logger):
+def tabulate_step_meter(batch_idx, num_batches, num_intervals, meter_list, logger):
     """ Tabulate current average value of meters every `step_interval`.
 
     Args:
         batch_idx (int): The batch index in an epoch.
         num_batches (int): The number of batch in an epoch.
-        step_interval (int): The step interval to tabulate.
+        num_intervals (int): The number of interval to tabulate.
         meter_list (list or tuple of AverageMeter): A list of meters.
         logger (logging.logger): Program logger.
     """
+    step_interval = int(num_batches / num_intervals)
     if batch_idx % step_interval == 0:
         step_meter = {"Iteration": ["{}/{}".format(batch_idx, num_batches)]}
         for m in meter_list:

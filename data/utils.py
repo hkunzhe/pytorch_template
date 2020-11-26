@@ -17,5 +17,16 @@ def get_transform(transform_config):
     return transforms.Compose(transform)
 
 
+def get_dataset(dataset_dir, transform, train=True):
+    if "cifar" in dataset_dir:
+        dataset = CIFAR10(dataset_dir, transform=transform, train=train)
+    elif "imagenet" in dataset_dir:
+        dataset = ImageNet(dataset_dir, transform=transform, train=train)
+    else:
+        raise NotImplementedError("Dataset in {} is not supported.".format(dataset_dir))
+
+    return dataset
+
+
 def get_loader(dataset, loader_config, **kwargs):
     return DataLoader(dataset, **loader_config, **kwargs)

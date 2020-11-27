@@ -6,27 +6,29 @@ import torch.nn as nn
 from torch.optim import lr_scheduler
 
 
-def get_network(network_config):
+def get_network(network_config, logger):
     if "resnet18" in network_config:
         model = resnet.resnet18()
     else:
         raise NotImplementedError("Network {} is not supported.".format(network_config))
+    logger.info("Create model: {}".format(network_config))
 
     return model
 
 
-def get_criterion(criterion_config):
+def get_criterion(criterion_config, logger):
     if "CrossEntropy" in criterion_config:
         criterion = nn.CrossEntropyLoss()
     else:
         raise NotImplementedError(
             "Criterion {} is not supported.".format(criterion_config)
         )
+    logger.info("Create criterion: {}".format(criterion))
 
     return criterion
 
 
-def get_optimizer(model, optimizer_config):
+def get_optimizer(model, optimizer_config, logger):
     if "Adam" in optimizer_config:
         optimizer = torch.optim.Adam(model.parameters(), **optimizer_config["Adam"])
     elif "SGD" in optimizer_config:
@@ -35,11 +37,12 @@ def get_optimizer(model, optimizer_config):
         raise NotImplementedError(
             "Optimizer {} is not supported.".format(optimizer_config)
         )
+    logger.info("Create optimizer: {}".format(optimizer))
 
     return optimizer
 
 
-def get_scheduler(optimizer, lr_scheduler_config):
+def get_scheduler(optimizer, lr_scheduler_config, logger):
     if lr_scheduler_config is None:
         scheduler = None
     elif "MultiStepLR" in lr_scheduler_config:
@@ -54,6 +57,7 @@ def get_scheduler(optimizer, lr_scheduler_config):
         raise NotImplementedError(
             "Learning rate scheduler {} is not supported.".format(lr_scheduler_config)
         )
+    logger.info("Create learning rate scheduler: {}".format(lr_scheduler_config))
 
     return scheduler
 

@@ -13,6 +13,7 @@ def get_transform(transform_config):
     transform.append(transforms.ToTensor())
     if "normalize" in transform_config:
         transform.append(transforms.Normalize(**transform_config["normalize"]))
+    print(transform)
 
     return transforms.Compose(transform)
 

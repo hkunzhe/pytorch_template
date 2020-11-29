@@ -19,7 +19,7 @@ def get_transform(transform_config):
 
 
 def get_dataset(dataset_dir, transform, train=True):
-    if "cifar" in dataset_dir:
+    if "cifar10" in dataset_dir:
         dataset = CIFAR10(dataset_dir, transform=transform, train=train)
     elif "imagenet" in dataset_dir:
         dataset = ImageNet(dataset_dir, transform=transform, train=train)

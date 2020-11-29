@@ -58,7 +58,8 @@ def get_saved_dir(config, inner_dir, config_name, resume=""):
         config (dict): Configuration dict.
         inner_dir (str): Directory between `config/` and configuration file.
         config_name (str): Configuration filename.
-        resume (str): Path to checkpoint or False which means training from scratch (default: "").
+        resume (str): Checkpoint name (empty string means the latest checkpoint)
+                      or False (means training from scratch) (default: "").
     
     Returns:
         saved_dir (str): The directory to save.
@@ -83,7 +84,8 @@ def get_storage_dir(config, inner_dir, config_name, resume=""):
         config (dict): Configuration dict.
         inner_dir (str): Directory between `config/` and configuration file.
         config_name (str): Configuration filename.
-        resume (str): Path to checkpoint or False which means training from scratch (default: "").
+        resume (str): Checkpoint name (empty string means the latest checkpoint)
+                      or False (means training from scratch) (default: "").
     
     Returns:
         storage_dir (str): Storage directory.

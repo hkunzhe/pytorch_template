@@ -44,7 +44,7 @@ def load_config(config_path):
     print("Load configuration file from {}:".format(config_path))
     with open(config_path, "r") as f:
         config = yaml.safe_load(f)
-    config_name = config_hierarchy[-1].split(".")[0]
+    config_name = config_hierarchy[-1].split(".yaml")[0]
 
     return config, inner_dir, config_name
 

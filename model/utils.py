@@ -5,10 +5,12 @@ import torch
 import torch.nn as nn
 from torch.optim import lr_scheduler
 
+from .network import preact_resnet_cifar, resnet_cifar
+
 
 def get_network(network_config, logger):
     if "resnet18" in network_config:
-        model = resnet.resnet18()
+        model = resnet_cifar.resnet18()
     else:
         raise NotImplementedError("Network {} is not supported.".format(network_config))
     logger.info("Create model: {}".format(network_config))

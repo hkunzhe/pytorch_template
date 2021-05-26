@@ -1,5 +1,5 @@
 import os
-from functools import cmp_to_key
+from collections import OrderedDict
 
 import torch
 import torch.nn as nn
@@ -62,64 +62,82 @@ def get_scheduler(optimizer, lr_scheduler_config, logger):
     return scheduler
 
 
-def ckpt_key():
-    def ckpt_cmp(x, y):
-        epoch_x = int(x.split("h")[1].split(".")[0])
-        epoch_y = int(y.split("h")[1].split(".")[0])
-        return epoch_x - epoch_y
+def load_state(
+    model, resume, ckpt_dir, gpu, logger, optimizer=None, scheduler=None, is_best=False
+):
+    """Load training state from checkpoint.
 
-    return cmp_to_key(ckpt_cmp)
-
-
-def load_ckpt(resume, ckpt_dir, gpu, logger):
-    """ Load checkpoint.
-
-    Args:
-        resume (str): Checkpoint name (empty string means the latest checkpoint)
-                      or False (means training from scratch).
-        ckpt_dir (str): Checkpoint directory.
-        gpu (str or int): The specified single gpu to load checkpoint.
-    Returns:
-        ckpt (dict): Loaded checkpoint.
-    """
-    file_list = sorted(os.listdir(ckpt_dir), key=ckpt_key())
-    if resume == "" and file_list:
-        ckpt_path = os.path.join(ckpt_dir, file_list[-1])
-        logger.info(
-            "Load training state from the latest checkpoint: {}".format(ckpt_path)
-        )
-    else:
-        ckpt_path = os.path.join(ckpt_dir, resume)
-        logger.info("Load training state from: {}".format(ckpt_path))
-    ckpt = torch.load(ckpt_path, map_location="cuda:{}".format(gpu))
-
-    return ckpt
-
-
-def load_state(model, optimizer, resume, ckpt_dir, gpu, logger, scheduler=None):
-    """ Load training state from checkpoint.
-    
     Args:
         model (torch.nn.Module): Model to resume.
-        optimizer (torch.optim): Optimizer to resume.
         resume (str): Checkpoint name (empty string means the latest checkpoint)
-                      or False (means training from scratch).
+            or False (means training from scratch).
         ckpt_dir (str): Checkpoint directory.
         gpu (str or int): The specified single gpu to load checkpoint.
-        scheduler (torch.optim.lr_scheduler): Learning rate scheduler to resume (default: None).
+        optimizer (torch.optim.Optimizer, optional): Optimizer to resume. Default is None.
+        scheduler (torch.optim._LRScheduler, optional): Learning rate scheduler to
+            resume. Default is None.
+        is_best (boolean): Set True to load checkpoint
+            with ``best_acc``. Default is False.
+
     Returns:
-        resumed_epoch: The epoch to resume (0 means training from scratch.)
+        resumed_epoch (int): The epoch to resume (0 means training from scratch.)
+        best_acc (float): The best test accuracy in the training.
+        best_epoch (int): The epoch getting the ``best_acc``.
     """
     if resume == "False":
         logger.warning("Training from scratch.")
         resumed_epoch = 0
+        if is_best:
+            best_acc = 0
+            best_epoch = 0
+            return resumed_epoch, best_acc, best_epoch
+        else:
+            return resumed_epoch
     else:
-        ckpt = load_ckpt(resume, ckpt_dir, gpu, logger)
-        model.load_state_dict(ckpt["model_state_dict"])
-        optimizer.load_state_dict(ckpt["optimizer_state_dict"])
+        # Load checkpoint.
+        if resume == "":
+            ckpt_path = os.path.join(ckpt_dir, "latest_model.pt")
+        else:
+            ckpt_path = os.path.join(ckpt_dir, resume)
+        ckpt = torch.load(ckpt_path, map_location="cuda:{}".format(gpu))
+        logger.info("Load training state from the checkpoint {}:".format(ckpt_path))
+        logger.info("Epoch: {}, result: {}".format(ckpt["epoch"], ckpt["result"]))
+        if "parallel" in str(type(model)):
+            # DataParallel or DistributedParallel.
+            model.load_state_dict(ckpt["model_state_dict"])
+        else:
+            # Remove "module." in `model_state_dict` if saved
+            # from DDP wrapped model in the single GPU training.
+            model_state_dict = OrderedDict()
+            for k, v in ckpt["model_state_dict"].items():
+                if k.startswith("module."):
+                    k = k.replace("module.", "")
+                    model_state_dict[k] = v
+                else:
+                    model_state_dict[k] = v
+            model.load_state_dict(model_state_dict)
+        resumed_epoch = ckpt["epoch"]
+        if optimizer is not None:
+            optimizer.load_state_dict(ckpt["optimizer_state_dict"])
         if scheduler is not None:
             scheduler.load_state_dict(ckpt["scheduler_state_dict"])
-        logger.info("Result of the resumed model: {}".format(ckpt["result"]))
-        resumed_epoch = ckpt["epoch"]
+        if is_best:
+            best_acc = ckpt["best_acc"]
+            best_epoch = ckpt["best_epoch"]
+            return resumed_epoch, best_acc, best_epoch
+        else:
+            return resumed_epoch
 
-    return resumed_epoch
+
+def set_mode(model, training_mode=True, requires_grad=True):
+    """Set ``training`` and ``requires_grad`` status for all modules in ``model``, and
+    return original status. It's useful to restore ``model`` status.
+    """
+    # TODO: fine-grained per-module status.
+    ori_training_mode = model.training
+    model.train() if training_mode else model.eval()
+    ori_requires_grad = next(model.parameters()).requires_grad
+    for param in model.parameters():
+        param.requires_grad = requires_grad
+
+    return ori_training_mode, ori_requires_grad

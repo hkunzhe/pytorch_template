@@ -1,8 +1,8 @@
 import logging
+import os
 import random
 import shutil
 import sys
-import os
 
 import numpy as np
 import torch
@@ -10,15 +10,16 @@ import yaml
 
 
 def load_config(config_path):
-    """Load config file from `config_path`.
+    """Load config file from ``config_path``.
+
     Args:
-        config_path (str): Configuration file path, which must be in `config` dir, e.g.,
-            `./config/inner_dir/example.yaml` and `config/inner_dir/example`.
-    
+        config_path (str): Configuration file path, which must be in ``config`` dir,
+            e.g., ``./config/inner_dir/example.yaml`` and ``config/inner_dir/example``.
+
     Returns:
         config (dict): Configuration dict.
-        inner_dir (str): Directory between `config/` and configuration file. If `config_path`
-                        doesn't contain `inner_dir`, return empty string.
+        inner_dir (str): Directory between ``config/`` and configuration file. If ``config_path``
+            doesn't contain ``inner_dir``, return empty string.
         config_name (str): Configuration filename.
     """
     assert os.path.exists(config_path)
@@ -50,17 +51,17 @@ def load_config(config_path):
 
 
 def get_saved_dir(config, inner_dir, config_name, resume=""):
-    """Get the directory to save for corresponding `config`. 
-    
-    .. note:: If `saved_dir` in config is already exists and resume is `False`,
-              it will remove `saved_dir`.
+    """Get the directory to save for corresponding ``config``.
+
+    .. note:: If ``saved_dir`` in config is already exists and resume is False,
+              it will remove ``saved_dir``.
     Args:
         config (dict): Configuration dict.
-        inner_dir (str): Directory between `config/` and configuration file.
+        inner_dir (str): Directory between ``config/`` and configuration file.
         config_name (str): Configuration filename.
         resume (str): Checkpoint name (empty string means the latest checkpoint)
-                      or False (means training from scratch) (default: "").
-    
+            or False (means training from scratch). Default is "".
+
     Returns:
         saved_dir (str): The directory to save.
     """
@@ -76,17 +77,18 @@ def get_saved_dir(config, inner_dir, config_name, resume=""):
 
 
 def get_storage_dir(config, inner_dir, config_name, resume=""):
-    """Get the storage and checkpoint directory for corresponding `config`.
-    .. note:: If `storage_dir` in config is already exists and resume is `False`,
-              it will remove `storage_dir`.
+    """Get the storage and checkpoint directory for corresponding ``config``.
     
+    .. note:: If ``storage_dir`` in config is already exists and resume is False,
+              it will remove ``storage_dir``.
+
     Args:
         config (dict): Configuration dict.
-        inner_dir (str): Directory between `config/` and configuration file.
+        inner_dir (str): Directory between ``config/`` and configuration file.
         config_name (str): Configuration filename.
         resume (str): Checkpoint name (empty string means the latest checkpoint)
-                      or False (means training from scratch) (default: "").
-    
+            or False (means training from scratch). Default is "".
+
     Returns:
         storage_dir (str): Storage directory.
         ckpt_dir (str): Checkpoint directory.
@@ -108,8 +110,7 @@ def get_storage_dir(config, inner_dir, config_name, resume=""):
 class NoOp:
     def __getattr__(self, *args):
         def no_op(*args, **kwargs):
-            """Accept every signature by doing non-operation.
-            """
+            """Accept every signature by doing non-operation."""
             pass
 
         return no_op
@@ -154,7 +155,7 @@ def get_logger(log_dir, log_name=None, resume=True, is_rank0=True):
 
 def set_seed(seed=None, deterministic=True, benchmark=False):
     """Make program nearly reproducible if seed is not `None`.
-    
+
     .. note:: Turn on cudnn determinism and turn off cudnn benchmark will slow down program.
     """
     if seed is not None:

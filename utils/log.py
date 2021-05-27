@@ -26,7 +26,7 @@ def tabulate_step_meter(batch_idx, num_batches, num_intervals, meter_list, logge
 
 
 def tabulate_epoch_meter(elapsed_time, meter_list, logger):
-    """ Tabulate total average value of meters every epoch.
+    """Tabulate total average value of meters every epoch.
 
     Args:
         eplased_time (float): The elapsed time of a epoch.

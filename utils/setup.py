@@ -64,6 +64,7 @@ def get_saved_dir(config, inner_dir, config_name, resume=""):
 
     Returns:
         saved_dir (str): The directory to save.
+        log_dir (str): The directory to save logs.
     """
     assert os.path.exists(config["saved_dir"])
     saved_dir = os.path.join(config["saved_dir"], inner_dir, config_name)
@@ -72,8 +73,11 @@ def get_saved_dir(config, inner_dir, config_name, resume=""):
         shutil.rmtree(saved_dir)
     if not os.path.exists(saved_dir):
         os.makedirs(saved_dir)
+    log_dir = os.path.join(saved_dir, "log")
+    if not os.path.exists(log_dir):
+        os.makedirs(log_dir)
 
-    return saved_dir
+    return saved_dir, log_dir
 
 
 def get_storage_dir(config, inner_dir, config_name, resume=""):

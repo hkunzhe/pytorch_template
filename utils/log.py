@@ -2,14 +2,14 @@ from tabulate import tabulate
 
 
 def tabulate_step_meter(batch_idx, num_batches, num_intervals, meter_list, logger):
-    """ Tabulate current average value of meters every `step_interval`.
+    """Tabulate current average value of meters every ``step_interval``.
 
     Args:
         batch_idx (int): The batch index in an epoch.
         num_batches (int): The number of batch in an epoch.
         num_intervals (int): The number of interval to tabulate.
         meter_list (list or tuple of AverageMeter): A list of meters.
-        logger (logging.logger): Program logger.
+        logger (logging.logger): The logger.
     """
     step_interval = int(num_batches / num_intervals)
     if batch_idx % step_interval == 0:
@@ -31,7 +31,7 @@ def tabulate_epoch_meter(elapsed_time, meter_list, logger):
     Args:
         eplased_time (float): The elapsed time of a epoch.
         meter_list (list or tuple of AverageMeter): A list of meters.
-        logger (logging.logger): Program logger.
+        logger (logging.logger): The logger.
     """
     epoch_meter = {m.name: [m.total_avg] for m in meter_list}
     epoch_meter["time"] = [elapsed_time]
@@ -44,7 +44,7 @@ def tabulate_epoch_meter(elapsed_time, meter_list, logger):
 class AverageMeter(object):
     """Computes and stores the average and current value.
 
-    Modified from https://github.com/pytorch/examples/blob/master/imagenet/main.py
+    Modified from https://github.com/pytorch/examples.
     """
 
     def __init__(self, name, fmt=None):

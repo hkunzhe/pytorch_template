@@ -1,3 +1,6 @@
+import os
+
+import pandas as pd
 from tabulate import tabulate
 
 
@@ -39,6 +42,20 @@ def tabulate_epoch_meter(elapsed_time, meter_list, logger):
     table = table.split("\n")
     table = "\n".join([table[1]] + table)
     logger.info(table)
+
+
+def result2csv(result, log_dir):
+    """Append ``result`` (dict) to csv files by keys in ``log_dir``."""
+    for k in result.keys():
+        file_path = os.path.join(log_dir, k + ".csv")
+        if not os.path.exists(file_path):
+            df = pd.DataFrame.from_records([result[k]])
+            df.to_csv(file_path, index=False)
+        else:
+            with open(file_path) as f:
+                df = pd.read_csv(f)
+                df = df.append(result[k], ignore_index=True)
+                df.to_csv(file_path, index=False)
 
 
 class AverageMeter(object):

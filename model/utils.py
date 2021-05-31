@@ -8,29 +8,31 @@ from torch.optim import lr_scheduler
 from .network import preact_resnet_cifar, resnet_cifar
 
 
-def get_network(network_config, logger):
-    if "resnet18" in network_config:
-        model = resnet_cifar.resnet18()
+def get_network(network_config):
+    if "resnet18_cifar" in network_config:
+        model = resnet_cifar.resnet18(**network_config["resnet18_cifar"])
+    elif "preact_resnet18_cifar" in network_config:
+        model = preact_resnet_cifar.preact_resnet18(
+            **network_config["preact_resnet18_cifar"]
+        )
     else:
         raise NotImplementedError("Network {} is not supported.".format(network_config))
-    logger.info("Create model: {}".format(network_config))
 
     return model
 
 
-def get_criterion(criterion_config, logger):
+def get_criterion(criterion_config):
     if "cross_entropy" in criterion_config:
         criterion = nn.CrossEntropyLoss(**criterion_config("cross_entropy"))
     else:
         raise NotImplementedError(
             "Criterion {} is not supported.".format(criterion_config)
         )
-    logger.info("Create criterion: {}".format(criterion))
 
     return criterion
 
 
-def get_optimizer(model, optimizer_config, logger):
+def get_optimizer(model, optimizer_config):
     if "Adam" in optimizer_config:
         optimizer = torch.optim.Adam(model.parameters(), **optimizer_config["Adam"])
     elif "SGD" in optimizer_config:
@@ -39,12 +41,11 @@ def get_optimizer(model, optimizer_config, logger):
         raise NotImplementedError(
             "Optimizer {} is not supported.".format(optimizer_config)
         )
-    logger.info("Create optimizer: {}".format(optimizer))
 
     return optimizer
 
 
-def get_scheduler(optimizer, lr_scheduler_config, logger):
+def get_scheduler(optimizer, lr_scheduler_config):
     if lr_scheduler_config is None:
         scheduler = None
     elif "multi_step" in lr_scheduler_config:
@@ -59,7 +60,6 @@ def get_scheduler(optimizer, lr_scheduler_config, logger):
         raise NotImplementedError(
             "Learning rate scheduler {} is not supported.".format(lr_scheduler_config)
         )
-    logger.info("Create learning rate scheduler: {}".format(lr_scheduler_config))
 
     return scheduler
 

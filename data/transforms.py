@@ -71,7 +71,7 @@ class TorchTransforms(nn.Module):
 
         return transform
 
-    def _query_transform(name, kwargs):
+    def _query_transform(self, name, kwargs):
         if name == "random_crop":
             return transforms.RandomCrop(**kwargs)
         elif name == "random_resize_crop":
@@ -113,7 +113,7 @@ class KorniaTransforms(nn.Module):
         # A list of transforms. which is consistent with ``transforms.Compose``.
         self.transforms = list(self.transform)
 
-    def _get_transforms(self, transform_config):
+    def _get_transform(self, transform_config):
         transform = []
         if transform_config is not None:
             for (k, v) in transform_config.items():

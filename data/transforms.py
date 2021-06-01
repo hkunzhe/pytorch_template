@@ -130,6 +130,8 @@ class KorniaTransforms(nn.Module):
             return K.augmentation.RandomResizedCrop(**kwargs)
         elif name == "resize":
             return K.geometry.Resize(**kwargs)
+        elif name == "center_crop":
+            return K.augmentation.CenterCrop(**kwargs)
         elif name == "random_horizontal_flip":
             return K.augmentation.RandomHorizontalFlip(**kwargs)
         elif name == "normalize":
@@ -141,8 +143,9 @@ class KorniaTransforms(nn.Module):
         else:
             raise ValueError("Kornia transformation {} is not supported!".format(name))
 
+    # @torch.no_grad()  # disable gradients for effiency.
     def forward(self, x):
-        x = self.transforms(x)
+        x = self.transform(x)
 
         return x
 

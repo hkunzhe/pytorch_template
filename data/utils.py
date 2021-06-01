@@ -1,25 +1,12 @@
-import torchvision.transforms as transforms
 from torch.utils.data import DataLoader
 
-
-def get_transform(transform_config):
-    transform = []
-    if "random_resize_crop" in transform_config:
-        transform.append(
-            transforms.RandomResizedCrop(**transform_config["random_resize_crop"])
-        )
-    if "random_horizontal_flip" in transform_config:
-        transform.append(transforms.RandomHorizontalFlip(**transform_config["hflip"]))
-    transform.append(transforms.ToTensor())
-    if "normalize" in transform_config:
-        transform.append(transforms.Normalize(**transform_config["normalize"]))
-    print(transform)
-
-    return transforms.Compose(transform)
+from .cifar import CIFAR10
+from .imagenet import ImageNet
+from .prefetch import PrefetchLoader
 
 
 def get_dataset(dataset_dir, transform, train=True):
-    if "cifar10" in dataset_dir:
+    if "cifar-10" in dataset_dir:
         dataset = CIFAR10(dataset_dir, transform=transform, train=train)
     elif "imagenet" in dataset_dir:
         dataset = ImageNet(dataset_dir, transform=transform, train=train)
@@ -29,5 +16,12 @@ def get_dataset(dataset_dir, transform, train=True):
     return dataset
 
 
-def get_loader(dataset, loader_config, **kwargs):
-    return DataLoader(dataset, **loader_config, **kwargs)
+def get_loader(dataset, prefetch=False, loader_config=None, **kwargs):
+    if loader_config is None:
+        loader = DataLoader(dataset, **kwargs)
+    else:
+        loader = DataLoader(dataset, **loader_config, **kwargs)
+    if prefetch:
+        loader = PrefetchLoader(loader)
+
+    return loader

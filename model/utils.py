@@ -5,7 +5,7 @@ import torch
 import torch.nn as nn
 from torch.optim import lr_scheduler
 
-from .network import preact_resnet_cifar, resnet_cifar
+from .network import preact_resnet_cifar, resnet_cifar, resnet_imagenet
 
 
 def get_network(network_config):
@@ -15,6 +15,8 @@ def get_network(network_config):
         model = preact_resnet_cifar.preact_resnet18(
             **network_config["preact_resnet18_cifar"]
         )
+    elif "resnet18_imagenet" in network_config:
+        model = resnet_imagenet.resnet18(**network_config["resnet18_imagenet"])
     else:
         raise NotImplementedError("Network {} is not supported.".format(network_config))
 

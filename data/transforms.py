@@ -35,8 +35,8 @@ class DeNormalize(object):
     """
 
     def __init__(self, mean, std, inplace=False):
-        self.mean = mean
-        self.std = std
+        self.mean = torch.as_tensor(mean)
+        self.std = torch.as_tensor(std)
         self.inplace = inplace
 
     def __call__(self, tensor):
@@ -44,11 +44,14 @@ class DeNormalize(object):
             raise TypeError(
                 "Tensor should be torch.Tensor. Got {}".format(type(tensor))
             )
+        if len(tensor.shape) != 4:
+            raise ValueError("Tensor should be with (B, C, H, W) shape.")
         if not self.inplace:
             tensor = tensor.clone()
+        mean = self.mean.clone().to(tensor.device).view(1, tensor.shape[1], 1, 1)
+        std = self.std.clone().to(tensor.device).view(1, tensor.shape[1], 1, 1)
         # TODO: numerical stability.
-        for t, m, s in zip(tensor, self.mean, self.std):
-            t.mul_(s).add_(m)
+        tensor = tensor.mul(std).add(mean)
 
         return tensor
 

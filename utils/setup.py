@@ -166,5 +166,5 @@ def set_seed(seed=None, deterministic=True, benchmark=False):
         random.seed(seed)
         np.random.seed(seed)
         torch.manual_seed(seed)
-        torch.backends.cudnn.deterministic = deterministic
-        torch.backends.cudnn.benchmark = benchmark
+    torch.backends.cudnn.deterministic = deterministic
+    torch.backends.cudnn.benchmark = benchmark

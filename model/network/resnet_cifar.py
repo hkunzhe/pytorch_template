@@ -7,7 +7,8 @@ Reference:
     Deep Residual Learning for Image Recognition. arXiv:1512.03385
 
 Modified from https://github.com/kuangliu/pytorch-cifar.
-Remove ``torch.nn.functional`` in ``forward()``.
+[1] Replace ``F.relu`` and ``F.avg_pool2d`` with ``nn.Module`` in ``forward()``
+    to be consistent with torchvision.
 """
 import torch
 import torch.nn as nn
@@ -112,20 +113,17 @@ class ResNet(nn.Module):
             self.in_planes = planes * block.expansion
         return nn.Sequential(*layers)
 
-    def forward(self, x, feature_output=False):
+    def forward(self, x):
         out = self.relu(self.bn1(self.conv1(x)))
         out = self.layer1(out)
         out = self.layer2(out)
         out = self.layer3(out)
         out = self.layer4(out)
         out = self.avgpool(out)
-        feature = out.view(out.size(0), -1)
-        out = self.linear(feature)
-
-        if feature_output:
-            return out, feature
-        else:
-            return out
+        out = out.view(out.size(0), -1)
+        out = self.linear(out)
+        
+        return out
 
 
 def resnet18(**kwargs):

@@ -1,5 +1,6 @@
 """Modified from https://github.com/kuangliu/pytorch-cifar.
-Remove ``torch.nn.functional`` in ``forward``.
+[1] Replace ``F.relu`` and ``F.avg_pool2d`` with ``nn.Module`` in ``forward()``
+    to be consistent with torchvision.
 """
 import torch
 import torch.nn as nn
@@ -83,19 +84,17 @@ class PreActResNet(nn.Module):
             self.in_planes = planes * block.expansion
         return nn.Sequential(*layers)
 
-    def forward(self, x, feature_output=False):
+    def forward(self, x):
         out = self.conv1(x)
         out = self.layer1(out)
         out = self.layer2(out)
         out = self.layer3(out)
         out = self.layer4(out)
-        out = self.avgpool(out, 4)
-        feature = out.view(out.size(0), -1)
-        out = self.linear(feature)
-        if feature_output:
-            return out, feature
-        else:
-            return out
+        out = self.avgpool(out)
+        out = out.view(out.size(0), -1)
+        out = self.linear(out)
+        
+        return out
 
 
 def preact_resnet18(**kwargs):

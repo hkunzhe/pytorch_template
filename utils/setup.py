@@ -142,7 +142,7 @@ def get_logger(log_dir, log_name=None, resume=True, is_rank0=True):
         logger.addHandler(stream_handler)
 
         # FileHandler
-        if resume == "False":
+        if not resume:
             mode = "w+"
         else:
             mode = "a+"

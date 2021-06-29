@@ -66,6 +66,39 @@ def get_scheduler(optimizer, lr_scheduler_config):
     return scheduler
 
 
+def load_model(model, ckpt_name, ckpt_dir, key=None):
+    """Load model state dict from the checkpoint.
+
+    Args:
+        model (torch.nn.Module): The model to load.
+        ckpt_name (str): The checkpoint name.
+        ckpt_dir (str): The checkpoint directory.
+        key (str, optional): The key to the model state dict.
+    """
+    ckpt_path = os.path.join(ckpt_dir, ckpt_name)
+    # To avoid GPU RAM surge when loading a model checkpoint saved on GPU.
+    ckpt = torch.load(ckpt_path, map_location="cpu")
+    # Find the key to the model's state_dict if not specified.
+    if key is None:
+        for k in ckpt.keys():
+            if isinstance(ckpt[k], OrderedDict):
+                key = k
+                break
+    if not "parallel" in str(type(model)):
+        # Remove "module." in `model_state_dict` if saved from DP or DDP
+        # wrapped model in the single GPU training.
+        model_state_dict = OrderedDict()
+        for k, v in ckpt[key].items():
+            if k.startswith("module."):
+                k = k.replace("module.", "")
+                model_state_dict[k] = v
+            else:
+                model_state_dict[k] = v
+        model.load_state_dict(model_state_dict)
+    else:
+        model.load_state_dict(ckpt[key])
+
+
 def load_state(
     model, resume, ckpt_dir, gpu, logger, optimizer=None, scheduler=None, is_best=False
 ):

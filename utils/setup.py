@@ -120,15 +120,16 @@ class NoOp:
         return no_op
 
 
-def get_logger(log_dir, log_name=None, resume=True, is_rank0=True):
+def get_logger(log_dir, log_name=None, resume="", is_rank0=True):
     """Get the program logger.
+    FIXME: A repeated INFO exists in stream handler (torch.__version__>1.6).
 
     Args:
         log_dir (str): The directory to save the log file.
         log_name (str, optional): The log filename. If None, it will use the main
             filename with ``.log`` extension. Default is None.
-        resume (boolean): If True, open the log file in appending and reading mode;
-            If False, open the log file in writing and reading mode. Default is True.
+        resume (str): If False, open the log file in writing and reading mode.
+            Else, open the log file in appending and reading mode; Default is "".
         is_rank0 (boolean): If True, create the normal logger; If False, create the null
            logger, which is useful in DDP training. Default is True.
     """
@@ -142,10 +143,7 @@ def get_logger(log_dir, log_name=None, resume=True, is_rank0=True):
         logger.addHandler(stream_handler)
 
         # FileHandler
-        if not resume:
-            mode = "w+"
-        else:
-            mode = "a+"
+        mode = "w+" if resume=="False" else "a+"
         if log_name is None:
             log_name = os.path.basename(sys.argv[0]).split(".")[0] + (".log")
         file_handler = logging.FileHandler(os.path.join(log_dir, log_name), mode=mode)

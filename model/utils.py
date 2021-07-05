@@ -99,17 +99,16 @@ def load_model(model, ckpt_name, ckpt_dir, key=None):
         model.load_state_dict(ckpt[key])
 
 
-def load_state(
-    model, resume, ckpt_dir, gpu, logger, optimizer=None, scheduler=None, is_best=False
+def resume_state(
+    model, resume, ckpt_dir, logger, optimizer=None, scheduler=None, is_best=False
 ):
-    """Load training state from checkpoint.
+    """Resume training state from checkpoint.
 
     Args:
         model (torch.nn.Module): Model to resume.
         resume (str): Checkpoint name (empty string means the latest checkpoint)
             or False (means training from scratch).
         ckpt_dir (str): Checkpoint directory.
-        gpu (str or int): The specified single gpu to load checkpoint.
         optimizer (torch.optim.Optimizer, optional): Optimizer to resume. Default is None.
         scheduler (torch.optim._LRScheduler, optional): Learning rate scheduler to
             resume. Default is None.
@@ -131,28 +130,12 @@ def load_state(
         else:
             return resumed_epoch
     else:
-        # Load checkpoint.
-        if resume == "":
-            ckpt_path = os.path.join(ckpt_dir, "latest_model.pt")
-        else:
-            ckpt_path = os.path.join(ckpt_dir, resume)
-        ckpt = torch.load(ckpt_path, map_location="cuda:{}".format(gpu))
+        ckpt_name = "latest_model.pt" if resume == "" else resume
+        ckpt_path = os.path.join(ckpt_dir, ckpt_name)
+        ckpt = torch.load(ckpt_path, map_location="cpu")
         logger.info("Load training state from the checkpoint {}:".format(ckpt_path))
         logger.info("Epoch: {}, result: {}".format(ckpt["epoch"], ckpt["result"]))
-        if "parallel" in str(type(model)):
-            # DataParallel or DistributedParallel.
-            model.load_state_dict(ckpt["model_state_dict"])
-        else:
-            # Remove "module." in `model_state_dict` if saved
-            # from DDP wrapped model in the single GPU training.
-            model_state_dict = OrderedDict()
-            for k, v in ckpt["model_state_dict"].items():
-                if k.startswith("module."):
-                    k = k.replace("module.", "")
-                    model_state_dict[k] = v
-                else:
-                    model_state_dict[k] = v
-            model.load_state_dict(model_state_dict)
+        load_model(model, ckpt_name, ckpt_dir)
         resumed_epoch = ckpt["epoch"]
         if optimizer is not None:
             optimizer.load_state_dict(ckpt["optimizer_state_dict"])

@@ -68,10 +68,11 @@ def main():
 
     os.environ["CUDA_VISIBLE_DEVICES"] = args.gpu
     ngpus_per_node = torch.cuda.device_count()
-    if ngpus_per_node > 1:
-        args.distributed = True
-    else:
-        args.distributed = False
+    # if ngpus_per_node > 1:
+    #     args.distributed = True
+    # else:
+    #     args.distributed = False
+    args.distributed = True if ngpus_per_node > 1 else False
     if args.distributed:
         args.world_size = ngpus_per_node * args.world_size
         print("Distributed training on GPUs: {}.".format(args.gpu))
@@ -149,7 +150,6 @@ def main_worker(gpu, ngpus_per_node, args, config):
         model,
         args.resume,
         args.ckpt_dir,
-        gpu,
         logger,
         optimizer=optimizer,
         scheduler=scheduler,

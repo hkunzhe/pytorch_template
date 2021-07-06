@@ -222,7 +222,8 @@ def main_worker(gpu, ngpus_per_node, args, config):
             torch.save(saved_dict, ckpt_path)
             logger.info("Save the latest model to {}".format(gpu, ckpt_path))
 
-    logger.info("End at: {} at: {}".format(start_time, platform.node()))
+    end_time = time.asctime(time.localtime(time.time()))
+    logger.info("End at: {} at: {}".format(end_time, platform.node()))
 
 
 if __name__ == "__main__":

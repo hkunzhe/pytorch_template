@@ -82,7 +82,7 @@ def get_saved_dir(config, inner_dir, config_name, resume=""):
 
 def get_storage_dir(config, inner_dir, config_name, resume=""):
     """Get the storage and checkpoint directory for corresponding ``config``.
-    
+
     .. note:: If ``storage_dir`` in config is already exists and resume is False,
               it will remove ``storage_dir``.
 
@@ -143,12 +143,43 @@ def get_logger(log_dir, log_name=None, resume="", is_rank0=True):
         logger.addHandler(stream_handler)
 
         # FileHandler
-        mode = "w+" if resume=="False" else "a+"
+        mode = "w+" if resume == "False" else "a+"
         if log_name is None:
             log_name = os.path.basename(sys.argv[0]).split(".")[0] + (".log")
         file_handler = logging.FileHandler(os.path.join(log_dir, log_name), mode=mode)
         file_handler.setLevel(level=logging.INFO)
         logger.addHandler(file_handler)
+    else:
+        logger = NoOp()
+
+    return logger
+
+
+def get_loguru_logger(log_dir, log_name=None, resume="", is_rank0=True):
+    """Get the program logger with loguru.
+
+    Args:
+        log_dir (str): The directory to save the log file.
+        log_name (str, optional): The log filename. If None, it will use the main
+            filename with ``.log`` extension. Default is None.
+        resume (str): If False, open the log file in writing and reading mode.
+            Else, open the log file in appending and reading mode; Default is "".
+        is_rank0 (boolean): If True, create the normal logger; If False, create the null
+           logger, which is useful in DDP training. Default is True.
+    """
+    if is_rank0:
+        from loguru import logger
+
+        mode = "w+" if resume == "False" else "a+"
+        if log_name is None:
+            log_name = os.path.basename(sys.argv[0]).split(".")[0] + (".log")
+        log_path = os.path.join(log_dir, log_name)
+        logger.configure(
+            handlers=[
+                dict(sink=sys.stdout, format="{message}"),
+                dict(sink=log_path, format="{message}", mode=mode),
+            ]
+        )
     else:
         logger = NoOp()
 

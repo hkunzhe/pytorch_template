@@ -1,5 +1,5 @@
 """Modified from torch/utils/data/_utils/collate.py:
-1. Add a case to handle class ``PIL.Image.Image``.
+[1]. Add a case to handle class ``PIL.Image.Image``.
 """
 
 import collections
@@ -10,6 +10,7 @@ import torch
 from PIL import Image
 from torch._six import string_classes
 
+# fmt: off
 np_str_obj_array_pattern = re.compile(r'[SaUO]')
 
 pil_collate_err_msg_format = (

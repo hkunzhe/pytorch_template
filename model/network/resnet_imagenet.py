@@ -1,11 +1,10 @@
-"""Borrowed from torchvision/models/resnet.py
-1. Add a ``feature_output`` option in the ``forward`` method of ``ResNet`` class.
+"""Borrowed from torchvision/models/resnet.py.
 """
 import torch
 import torch.nn as nn
 from torch.utils.model_zoo import load_url as load_state_dict_from_url
 
-
+# fmt: off
 __all__ = ['ResNet', 'resnet18', 'resnet34', 'resnet50', 'resnet101',
            'resnet152', 'resnext50_32x4d', 'resnext101_32x8d',
            'wide_resnet50_2', 'wide_resnet101_2']
@@ -201,7 +200,7 @@ class ResNet(nn.Module):
 
         return nn.Sequential(*layers)
 
-    def _forward_impl(self, x, feature_output=False):
+    def _forward_impl(self, x):
         # See note [TorchScript super()]
         x = self.conv1(x)
         x = self.bn1(x)
@@ -214,13 +213,10 @@ class ResNet(nn.Module):
         x = self.layer4(x)
 
         x = self.avgpool(x)
-        feature = torch.flatten(x, 1)
-        x = self.fc(feature)
+        x = torch.flatten(x, 1)
+        x = self.fc(x)
         
-        if feature_output:
-            return x, feature
-        else:
-            return x
+        return x
 
     def forward(self, x, feature_output=False):
         return self._forward_impl(x, feature_output)

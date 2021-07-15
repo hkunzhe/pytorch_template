@@ -4,13 +4,21 @@ import kornia as K
 import torch
 import torch.nn as nn
 import torchvision.transforms as transforms
+from torchvision.transforms.functional import _interpolation_modes_from_int
 
 
 def get_mean_std(transform):
     """Get mean and standard deviation from ``transform``."""
+    if not isinstance(
+        transform, (transforms.Compose, TorchTransforms, KorniaTransforms)
+    ):
+        raise TypeError(
+            "Transform should be transforms.Compose, TorchTransforms or "
+            "KorniaTransforms. Got {}.".format(type(transform))
+        )
     normalize = False
     for t in transform.transforms:
-        if "Normalize" in str(type(t)):
+        if isinstance(t, (transforms.Normalize, K.enhance.Normalize)):
             normalize = True
             mean, std = t.mean, t.std
     if not normalize:
@@ -57,14 +65,23 @@ class DeNormalize(object):
 
 
 class TorchTransforms(nn.Module):
+    """A ``torchvision.transforms.Compose`` wrapper supports a transformation
+    configuration dict.
+
+    Args:
+        transform_config (dict): The transformation configuration dict.
+    """
+
     def __init__(self, transform_config):
         super(TorchTransforms, self).__init__()
         self.transform_config = transform_config
-        self.transform = self._get_transform(transform_config)
-        # A list of transforms. which is consistent with ``transforms.Compose``.
+        self.transform = self._get_transform(transform_config)  # transforms.Compose
+        # This is consistent with ``transforms.Compose`` has a ``transforms``
+        # attribute (a list of transforms).
         self.transforms = self.transform.transforms
 
     def _get_transform(self, transform_config):
+        """Convert a transformation configuration dict to ``transforms.Compose``."""
         transform = []
         if transform_config is not None:
             for (k, v) in transform_config.items():
@@ -78,8 +95,18 @@ class TorchTransforms(nn.Module):
         if name == "random_crop":
             return transforms.RandomCrop(**kwargs)
         elif name == "random_resize_crop":
+            # Backward compatibility with integer value.
+            if "interpolation" in kwargs:
+                kwargs["interpolation"] = _interpolation_modes_from_int(
+                    kwargs["interpolation"]
+                )
             return transforms.RandomResizedCrop(**kwargs)
         elif name == "resize":
+            # Backward compatibility with integer value.
+            if "interpolation" in kwargs:
+                kwargs["interpolation"] = _interpolation_modes_from_int(
+                    kwargs["interpolation"]
+                )
             return transforms.Resize(**kwargs)
         elif name == "center_crop":
             return transforms.CenterCrop(**kwargs)
@@ -109,14 +136,22 @@ class TorchTransforms(nn.Module):
 
 
 class KorniaTransforms(nn.Module):
+    """A ``Kornia`` wrapper supports a transformation configuration dict.
+
+    Args:
+        transform_config (dict): The transformation configuration dict.
+    """
+
     def __init__(self, transform_config):
         super(KorniaTransforms, self).__init__()
         self.transform_config = transform_config
-        self.transform = self._get_transform(transform_config)
-        # A list of transforms. which is consistent with ``transforms.Compose``.
+        self.transform = self._get_transform(transform_config)  # nn.Sequential
+        # This is consistent with ``transforms.Compose`` has ``transforms``
+        # attribute (a list of transforms).
         self.transforms = list(self.transform)
 
     def _get_transform(self, transform_config):
+        """Convert a transformation configuration dict to ``nn.Sequential``."""
         transform = []
         if transform_config is not None:
             for (k, v) in transform_config.items():
@@ -138,9 +173,9 @@ class KorniaTransforms(nn.Module):
         elif name == "random_horizontal_flip":
             return K.augmentation.RandomHorizontalFlip(**kwargs)
         elif name == "normalize":
-            if isinstance(kwargs["mean"], list) or isinstance(kwargs["mean"], tuple):
+            if isinstance(kwargs["mean"], (list, tuple)):
                 kwargs["mean"] = torch.tensor(kwargs["mean"])
-            if isinstance(kwargs["std"], list) or isinstance(kwargs["std"], tuple):
+            if isinstance(kwargs["std"], (list, tuple)):
                 kwargs["std"] = torch.tensor(kwargs["std"])
             return K.enhance.Normalize(**kwargs)
         else:
@@ -160,3 +195,34 @@ class KorniaTransforms(nn.Module):
         format_string += "\n)"
 
         return format_string
+
+
+def concat_transform(*transform):
+    """Concat a squence of transform.
+
+    Args:
+       transform (sequence): A list or tuple of TorchTransforms, KorniaTransforms or
+           transforms.Compose.
+    """
+    t_type = [type(t) for t in transform]
+    same_type = all(t == t_type[0] for t in t_type)
+    if not same_type:
+        raise TypeError(
+            "All elements in transform should be with the same type. "
+            "Got {}".format(t_type)
+        )
+
+    concated_transform = []
+    for t in transform:
+        concated_transform.extend(t.transforms)
+    if isinstance(transform[0], (TorchTransforms, transforms.Compose)):
+        concated_transform = transforms.Compose(concated_transform)
+    elif isinstance(transform[0], KorniaTransforms):
+        concated_transform = nn.Sequential(*concated_transform)
+    else:
+        raise TypeError(
+            "Elements in transform should be TorchTransforms, "
+            "transforms.Compose or KorniaTransforms. Got {}".format(type(transform[0]))
+        )
+
+    return concated_transform

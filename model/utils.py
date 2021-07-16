@@ -148,8 +148,9 @@ def resume_state(
 
 
 def set_mode(model, training_mode=True, requires_grad=True):
-    """Set ``training`` and ``requires_grad`` status for all modules in ``model``, and
-    return original status. It's useful to restore ``model`` status.
+    """Set ``training`` and ``requires_grad`` status for all modules in the model, and
+    return the original status. It's useful to restore model statuses to avoid
+    in-place modification.
     """
     # TODO: fine-grained per-module status.
     ori_training_mode = model.training

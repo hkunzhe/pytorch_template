@@ -32,6 +32,10 @@ class PrefetchLoader:
     """A DataLoader wrapper for prefetching data to GPUs along with
     ``ToTensor`` and ``Normalize`` transformations (torchvision).
 
+    FIXME: Turn on prefetch mode will increase GPU memory every epoch until filled
+    and restart again, especially in training ImageNet models and CIFAR-10 models
+    with large batch size (2048).
+
     Reference:
     [1] https://github.com/NVIDIA/apex/tree/master/examples/imagenet.
     [2] https://github.com/open-mmlab/OpenSelfSup.

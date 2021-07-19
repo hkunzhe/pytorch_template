@@ -14,7 +14,6 @@ from torch.utils.data.distributed import DistributedSampler
 from data.transforms import TorchTransforms
 from data.utils import get_dataset, get_loader
 from model.utils import get_network, get_optimizer, get_scheduler, resume_state
-from utils.log import result2csv
 from utils.setup import (
     get_logger,
     get_saved_dir,
@@ -22,7 +21,8 @@ from utils.setup import (
     load_config,
     set_seed,
 )
-from utils.trainer import test, train
+from utils.trainer.img_clf import test, train
+from utils.trainer.log import result2csv
 
 
 def main():
@@ -68,10 +68,6 @@ def main():
 
     os.environ["CUDA_VISIBLE_DEVICES"] = args.gpu
     ngpus_per_node = torch.cuda.device_count()
-    # if ngpus_per_node > 1:
-    #     args.distributed = True
-    # else:
-    #     args.distributed = False
     args.distributed = True if ngpus_per_node > 1 else False
     if args.distributed:
         args.world_size = ngpus_per_node * args.world_size
@@ -113,6 +109,7 @@ def main_worker(gpu, ngpus_per_node, args, config):
     train_data = get_dataset(config["dataset_dir"], train_transform)
     test_data = get_dataset(config["dataset_dir"], test_transform, train=False)
     prefetch = "prefetch" in config and config["prefetch"]
+    logger.info("Prefetch: {}".format(prefetch))
     if args.distributed:
         train_sampler = DistributedSampler(train_data)
         # Divide batch size equally among multiple GPUs,
@@ -220,7 +217,7 @@ def main_worker(gpu, ngpus_per_node, args, config):
                 logger.info("Save the best model to {}".format(ckpt_path))
             ckpt_path = os.path.join(args.ckpt_dir, "latest_model.pt")
             torch.save(saved_dict, ckpt_path)
-            logger.info("Save the latest model to {}".format(gpu, ckpt_path))
+            logger.info("Save the latest model to {}".format(ckpt_path))
 
     end_time = time.asctime(time.localtime(time.time()))
     logger.info("End at: {} at: {}".format(end_time, platform.node()))

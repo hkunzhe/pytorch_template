@@ -32,13 +32,14 @@ def train(
         if amp:
             with autocast():
                 output = model(data)
-                loss = criterion(output, target)
+        else:
+            output = model(data)
+        loss = criterion(output, target)
+        if amp:
             scaler.scale(loss).backward()
             scaler.step(optimizer)
             scaler.update()
         else:
-            output = model(data)
-            loss = criterion(output, target)
             loss.backward()
             optimizer.step()
 

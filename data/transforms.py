@@ -4,7 +4,13 @@ import kornia as K
 import torch
 import torch.nn as nn
 import torchvision.transforms as transforms
-from torchvision.transforms.functional import _interpolation_modes_from_int
+
+try:
+    from torchvision.transforms.functional import _interpolation_modes_from_int
+except:
+    INTERPOLATION_MODES_FROM_INT = False
+else:
+    INTERPOLATION_MODES_FROM_INT = True
 
 
 def get_mean_std(transform):
@@ -95,19 +101,21 @@ class TorchTransforms(nn.Module):
         if name == "random_crop":
             return transforms.RandomCrop(**kwargs)
         elif name == "random_resize_crop":
-            # Backward compatibility with integer value.
-            if "interpolation" in kwargs:
-                kwargs["interpolation"] = _interpolation_modes_from_int(
-                    kwargs["interpolation"]
-                )
+            if INTERPOLATION_MODES_FROM_INT:
+                # Backward compatibility with integer interpolation value.
+                if "interpolation" in kwargs:
+                    kwargs["interpolation"] = _interpolation_modes_from_int(
+                        kwargs["interpolation"]
+                    )
             return transforms.RandomResizedCrop(**kwargs)
         elif name == "resize":
-            # Backward compatibility with integer value.
-            if "interpolation" in kwargs:
-                kwargs["interpolation"] = _interpolation_modes_from_int(
-                    kwargs["interpolation"]
-                )
-            return transforms.Resize(**kwargs)
+            if INTERPOLATION_MODES_FROM_INT:
+                # Backward compatibility with integer interpolation value.
+                if "interpolation" in kwargs:
+                    kwargs["interpolation"] = _interpolation_modes_from_int(
+                        kwargs["interpolation"]
+                    )
+                return transforms.Resize(**kwargs)
         elif name == "center_crop":
             return transforms.CenterCrop(**kwargs)
         elif name == "random_horizontal_flip":

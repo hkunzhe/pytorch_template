@@ -1,4 +1,5 @@
 import os
+from numbers import Number
 
 import pandas as pd
 from tabulate import tabulate
@@ -11,7 +12,7 @@ def tabulate_step_meter(batch_idx, num_batches, num_intervals, meter_list, logge
         batch_idx (int): The batch index in an epoch.
         num_batches (int): The number of batch in an epoch.
         num_intervals (int): The number of interval to tabulate.
-        meter_list (list or tuple of AverageMeter): A list of meters.
+        meter_list (sequence of AverageMeters): any python sequence of meters.
         logger (logging.logger): The logger.
     """
     step_interval = int(num_batches / num_intervals)
@@ -33,7 +34,7 @@ def tabulate_epoch_meter(elapsed_time, meter_list, logger):
 
     Args:
         eplased_time (float): The elapsed time of a epoch.
-        meter_list (list or tuple of AverageMeter): A list of meters.
+        meter_list (sequence of AverageMeters): any python sequence of meters.
         logger (logging.logger): The logger.
     """
     epoch_meter = {m.name: [m.total_avg] for m in meter_list}
@@ -45,7 +46,7 @@ def tabulate_epoch_meter(elapsed_time, meter_list, logger):
 
 
 def result2csv(result, log_dir):
-    """Append ``result`` (dict) to csv files by keys in ``log_dir``."""
+    """Append result (:class:`dict`) to csv files by keys in log_dir (:class:`str`)."""
     for k in result.keys():
         file_path = os.path.join(log_dir, k + ".csv")
         if not os.path.exists(file_path):
@@ -59,13 +60,14 @@ def result2csv(result, log_dir):
 
 
 class AverageMeter(object):
-    """Computes and stores the average and current value.
+    """Store the current average value and compute the total average value.
 
     Modified from https://github.com/pytorch/examples.
     """
 
-    def __init__(self, name, fmt=None):
+    def __init__(self, name: str, fmt=None):
         self.name = name
+        self.fmt = fmt
         self.reset()
 
     def reset(self):
@@ -74,7 +76,9 @@ class AverageMeter(object):
         self.sum = 0
         self.count = 0
 
-    def update(self, avg, n=1):
+    def update(self, avg: Number, n: Number = 1):
+        if not isinstance(avg, Number):
+            raise TypeError("Avg should be number.Number. Got {}".format(type(avg)))
         self.batch_avg = avg
         self.sum += avg * n
         self.count += n

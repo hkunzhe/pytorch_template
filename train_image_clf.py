@@ -15,7 +15,7 @@ from data.transforms import TorchTransforms
 from data.utils import get_dataset, get_loader
 from model.utils import get_network, get_optimizer, get_scheduler, resume_state
 from utils.setup import (
-    get_logger,
+    get_loguru_logger,
     get_saved_dir,
     get_storage_dir,
     load_config,
@@ -83,7 +83,7 @@ def main():
 
 
 def main_worker(gpu, ngpus_per_node, args, config):
-    logger = get_logger(args.log_dir, resume=args.resume, is_rank0=(gpu == 0))
+    logger = get_loguru_logger(args.log_dir, resume=args.resume, is_rank0=(gpu == 0))
     start_time = time.asctime(time.localtime(time.time()))
     logger.info("Start at: {} at: {}".format(start_time, platform.node()))
     torch.cuda.set_device(gpu)

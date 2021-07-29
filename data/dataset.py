@@ -2,11 +2,12 @@ import os
 import pickle
 
 import lmdb
+from PIL import Image
 from torch.utils.data import Dataset
 
 
 class LMDBDataset(Dataset):
-    """The LMDB file dataset for Pytorch Dataset, which has the format:
+    """Pytorch dataset for the LMDB file, which has the following format:
 
     ===========  =======================
     key          value
@@ -19,10 +20,14 @@ class LMDBDataset(Dataset):
     ``__len__``  n
     ===========  =======================
 
-    To avoid the `TypeError: can't pickle Environment objects` when using DDP:
-    1. Open an LMDB environment in ``__init__`` to load meta informations (the length
-    and keys of the dataset) just be sure to close it within ``__init__``.
-    2. Initilize the LMDB environment at the first data iteration.
+    Since data are loaded dynamically, ``__keys__`` and ``__len__`` are necessary for
+    :method:`__get_item__`.
+
+    .. note::
+        To avoid the `TypeError: can't pickle Environment objects` when using DDP:
+        1. | Open an LMDB environment in :method:`__init__` to load meta informations
+           | (the length and keys), just be sure to close it within :method:`__init__`.
+        2. Initilize the LMDB environment at the first data iteration.
 
     Reference:
     1. https://github.com/Lyken17/Efficient-PyTorch.
@@ -48,6 +53,8 @@ class LMDBDataset(Dataset):
         )
         with env.begin(write=False) as txn:
             self.length = pickle.loads(txn.get(b"__len__"))
+            # Deserialize keys (a long byteflow) in initialization since is
+            # time-consuming.
             self.keys = pickle.loads(txn.get(b"__keys__"))
         env.close()
 
@@ -64,6 +71,7 @@ class LMDBDataset(Dataset):
             byteflow = txn.get(self.keys[index])
         unpacked = pickle.loads(byteflow)
         img, target = unpacked[0], unpacked[1]  # PIL Image, int
+        assert isinstance(img, Image.Image)
         if self.transform is not None:
             img = self.transform(img)
         item = {"img": img, "target": target}

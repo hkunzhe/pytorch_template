@@ -9,14 +9,17 @@ from .prefetch import PrefetchLoader
 
 
 def get_dataset(dataset_dir, transform, train=True):
-    if "cifar-10" in dataset_dir and "lmdb" not in dataset_dir:
-        dataset = CIFAR10(dataset_dir, transform=transform, train=train)
-    elif "cifar-10" in dataset_dir and "lmdb" in dataset_dir:
+    if "lmdb" in dataset_dir:
         dataset = LMDBDataset(dataset_dir, transform=transform, train=train)
-    elif "imagenet" in dataset_dir:
-        dataset = ImageNet(dataset_dir, transform=transform, train=train)
     else:
-        raise NotImplementedError("Dataset in {} is not supported.".format(dataset_dir))
+        if "cifar-10" in dataset_dir:
+            dataset = CIFAR10(dataset_dir, transform=transform, train=train)
+        elif "imagenet" in dataset_dir:
+            dataset = ImageNet(dataset_dir, transform=transform, train=train)
+        else:
+            raise NotImplementedError(
+                "Dataset in {} is not supported.".format(dataset_dir)
+            )
 
     return dataset
 

@@ -187,9 +187,13 @@ def get_loguru_logger(log_dir, log_name=None, resume="", is_rank0=True):
 
 
 def set_seed(seed=None, deterministic=True, benchmark=False):
-    """Make program nearly reproducible if seed is not `None`.
+    """Set the same seed for python, numpy and pytorch along with options for CUDA convolution
+    benchmarking and determinism.
 
-    .. note:: Turn on cudnn determinism and turn off cudnn benchmark will slow down program.
+    .. note::
+        Turn off deterministic algorithms and turn on benchmarking for CUDA convolution will
+        speedup training, while introducing nondeterministic behaviors. See
+        https://pytorch.org/docs/stable/notes/randomness.html for detailed informations.
     """
     if seed is not None:
         random.seed(seed)

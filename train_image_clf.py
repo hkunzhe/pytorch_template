@@ -64,7 +64,6 @@ def main():
         config, inner_dir, config_name, args.resume
     )
     shutil.copy2(args.config, args.storage_dir)
-    set_seed(**config["seed"])
 
     os.environ["CUDA_VISIBLE_DEVICES"] = args.gpu
     ngpus_per_node = torch.cuda.device_count()
@@ -83,6 +82,7 @@ def main():
 
 
 def main_worker(gpu, ngpus_per_node, args, config):
+    set_seed(**config["seed"])
     logger = get_loguru_logger(args.log_dir, resume=args.resume, is_rank0=(gpu == 0))
     start_time = time.asctime(time.localtime(time.time()))
     logger.info("Start at: {} at: {}".format(start_time, platform.node()))

@@ -68,8 +68,7 @@ class LMDBDataset(Dataset):
             )
         with self.env.begin(write=False) as txn:
             byteflow = txn.get(self.keys[index])
-        unpacked = pickle.loads(byteflow)
-        img, target = unpacked[0], unpacked[1]  # PIL Image, int
+        img, target = pickle.loads(byteflow)  # PIL Image, int
         assert isinstance(img, Image.Image)
         if self.transform is not None:
             img = self.transform(img)

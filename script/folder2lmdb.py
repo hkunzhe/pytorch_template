@@ -3,9 +3,12 @@ import json
 import os
 import pickle
 import re
+from typing import Optional
 
 import lmdb
+import torchvision.transforms as transforms
 from PIL import Image
+from torch.utils.data import DataLoader
 from torchvision.datasets import ImageFolder
 from tqdm import tqdm
 
@@ -36,11 +39,6 @@ def single_folder2lmdb(
         img_dir/n.png
     And ``idx_2_class_path`` should be a json file with items (index, class).
     See :class:`LMDBDataset` for the LMDB file format. ``id`` is the index.
-
-    Modified from https://github.com/Lyken17/Efficient-PyTorch.
-    1. Use pickle to do serialization instead of pyarrow.
-    2. Iterate the image folder directly instead of using the pytorch dataloader.
-    3. Estimate the environment mapsize.
     """
     print("Loading the single image folder from {}".format(img_dir))
     print("Generate the LMDB file to {}".format(lmdb_dir))
@@ -95,8 +93,15 @@ def single_folder2lmdb(
     db.close()
 
 
-def image_folder2lmdb(img_dir: str, lmdb_dir: str, write_freq: int = 5000):
-    """Convert the image folder ``img_dir`` to the LMDB file ``lmdb_dir``.
+def image_folder2lmdb(
+    img_dir: str,
+    lmdb_dir: str,
+    write_freq: int = 5000,
+    num_workers: int = 16,
+    pre_transform: Optional[transforms.Compose] = None,
+):
+    """Convert the image folder ``img_dir`` to the LMDB file ``lmdb_dir`` along with a ``class2idx``
+    json file with items (class_name, class_index).
     The images are arranged like :class:`torchvision.datasets.ImageFolder`: ::
 
         img_dir/dog/xxx.png
@@ -111,10 +116,16 @@ def image_folder2lmdb(img_dir: str, lmdb_dir: str, write_freq: int = 5000):
 
     Modified from https://github.com/Lyken17/Efficient-PyTorch.
     1. Use pickle to do serialization instead of pyarrow.
-    2. Iterate the image folder directly instead of using the pytorch dataloader.
+    2. Serialize the pre-processed PIL Image instead of the raw image byteflow.
     3. Estimate the environment mapsize.
     """
-    dataset = ImageFolder(img_dir)
+    print("Convert the image folder: {} to the LMDB file: {}".format(img_dir, lmdb_dir))
+    # transform = transforms.Compose([transforms.Resize(256), transforms.CenterCrop(224)])
+    dataset = ImageFolder(img_dir, transform=pre_transform)
+    with open(os.path.join(lmdb_dir, "class2idx.json"), "w") as f:
+        json.dump(dataset.class_to_idx, f)
+    # Collate a batch list of tuple (PIL Image, label) samples.
+    data_loader = DataLoader(dataset, num_workers=num_workers, collate_fn=lambda x: x)
     size = get_du_dir(img_dir)
     db = lmdb.open(
         lmdb_dir,
@@ -126,21 +137,20 @@ def image_folder2lmdb(img_dir: str, lmdb_dir: str, write_freq: int = 5000):
     )
     txn = db.begin(write=True)
     filename_list = []
-    for idx, (path, class_idx) in enumerate(tqdm(dataset.samples)):
+    for idx, data in enumerate(tqdm(data_loader)):
+        img, class_idx = data[0]  # PIL Image, int
+        path = dataset.samples[idx][0]
         filename = os.path.splitext(os.path.basename(path))[0]
         filename_list.append(filename)
-        with open(path, "rb") as f:
-            img = Image.open(f).convert("RGB")
-            txn.put(
-                u"{}".format(filename).encode("ascii"), pickle.dumps((img, class_idx))
-            )
+        txn.put(u"{}".format(filename).encode("ascii"), pickle.dumps((img, class_idx)))
         if idx % write_freq == 0:
             txn.commit()
             txn = db.begin(write=True)
 
-    # Finish iterating through dataset.
     txn.commit()
-    keys = [u"{}".format(f).encode("ascii") for f in filename_list]
+    keys = [u"{}".format(f).encode("ascii") for f in filename_list]  # filename
+    print(keys)
+    print(len(keys))
     with db.begin(write=True) as txn:
         txn.put(b"__keys__", pickle.dumps(keys))
         txn.put(b"__len__", pickle.dumps(len(keys)))
@@ -160,8 +170,29 @@ if __name__ == "__main__":
         default=None,
         help="Path to the json file with items (idx, class).",
     )
+    parser.add_argument(
+        "--write-freq",
+        default=5000,
+        type=int,
+        help="The frequency to commit a write transaction.",
+    )
+    parser.add_argument(
+        "--num-workers",
+        default=16,
+        type=int,
+        help="The number of subprocesses to do data loading.",
+    )
     args = parser.parse_args()
     if args.folder_type == "single":
         single_folder2lmdb(args.img_dir, args.lmdb_dir, args.idx_2_class)
     else:
-        image_folder2lmdb(args.img_dir, args.lmdb_dir)
+        pre_transform = transforms.Compose(
+            [transforms.Resize(256), transforms.CenterCrop(224)]
+        )
+        image_folder2lmdb(
+            args.img_dir,
+            args.lmdb_dir,
+            write_freq=args.write_freq,
+            num_workers=args.num_workers,
+            pre_transform=pre_transform,
+        )
